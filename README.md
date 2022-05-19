@@ -6,4 +6,4 @@ with a k for extra kool factor
 .
 .
 yea
-*sunglasses emoji x 3*
+*sunglasses emoji*
