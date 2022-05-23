@@ -77,6 +77,13 @@ sun.look_at(Vec3(1,0,1))
 #skybox
 Sky()
 
+#enemy variables
+enemies = 0
+maxEnemies = 30
+enemiesToSpawn = 10
+enemiesToSpawn2 = 10
+wave = 0
+
 #player code below
 '''
 experimental code for seperating the player code from everything else
@@ -138,13 +145,15 @@ def input(key):
     if key == 'escape':
         quit()
     if key == 'r':
-        Func(reload(), delay = 0.5)
+        reload()
     if key == 'q':
-       Func(heal(), delay = 0.5) 
+       heal() 
     if key == 'l':
-        enemies.append(BasicEnemy())
+        BasicEnemy()
+        print(enemies)
 
 def shoot():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if player.gun == player.weaponList[0]:
         if not player.gun.on_cooldown and player.ammoCounts[player.gun.name][0] > 0:
             player.gun.on_cooldown = True
@@ -157,6 +166,17 @@ def shoot():
                 mouse.hovered_entity.hp -= 10
                 mouse.hovered_entity.blink(color.red)
                 if mouse.hovered_entity.hp <= 0:
+                    enemies -= 1
+                    if (enemies + enemiesToSpawn) == 0:
+                        wave += 1
+                        enemiesToSpawn = 10 + (wave * 5)
+                        enemiesToSpawn2 = 10 + (wave * 5)
+                    if enemiesToSpawn > 0:
+                        while enemies <= maxEnemies and enemiesToSpawn > 0:
+                            BasicEnemy()
+                            enemiesToSpawn -= 1 
+                    #print("it died")
+                    #print(enemies)
                     destroy(mouse.hovered_entity)
                 elif mouse.hovered_entity.hp <= 30:
                     mouse.hovered_entity.isStaggered = True
@@ -171,14 +191,12 @@ def shoot():
             '''
 
 def update():
+    global enemies
     if held_keys['left mouse']:
         shoot()
-    if len(enemies) == 0:
-        waves += 1
-        while enemiesToSpawn > 0:
-            pass
 
 def reload():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if mouse.world_point != None:
         reloadRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
         #print(reloadRaycast.entity)
@@ -186,9 +204,18 @@ def reload():
             if reloadRaycast.entity.isStaggered:
                 player.ammoCounts[player.gun.name][0] = player.ammoCounts[player.gun.name][1]
                 ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+                enemies -= 1
+                if (enemies + enemiesToSpawn) == 0:
+                    wave += 1
+                    enemiesToSpawn = 10 + (wave * 5)
+                    enemiesToSpawn2 = 10 + (wave * 5)
+                if enemiesToSpawn > 0:
+                    while enemies <= maxEnemies and enemiesToSpawn > 0:
+                        BasicEnemy()
+                        enemiesToSpawn -= 1
                 destroy(reloadRaycast.entity)
-
 def heal():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if mouse.world_point != None:
         healRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
         #print(healRaycast.entity)
@@ -196,8 +223,16 @@ def heal():
             if healRaycast.entity.isStaggered:
                 player.health += 25
                 health.text = str(player.health)
+                enemies -= 1
+                if (enemies + enemiesToSpawn) == 0:
+                    wave += 1
+                    enemiesToSpawn = 10 + (wave * 5)
+                    enemiesToSpawn2 = 10 + (wave * 5)
+                if enemiesToSpawn > 0:
+                    while enemies <= maxEnemies and enemiesToSpawn > 0:
+                        BasicEnemy()
+                        enemiesToSpawn -= 1
                 destroy(healRaycast.entity)
-
 def damagePlayer():
     player.health -= 5
     health.text = str(player.health)
@@ -206,22 +241,26 @@ def damagePlayer():
 
 class BasicEnemy(Entity):
     def __init__(self, **kwargs):
-        super().__init__( model='cube', scale_y=2, origin_y=-0.5, color=color.green,x = 15, z = 15, collider = 'box')
+        global enemies
+        super().__init__( model='cube', scale_y=2, origin_y=-0.5, color=color.green,x = randrange(-125, 125), z = randrange(-125, 125), collider = 'box')
         #self.health_bar = Entity(y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
         self.max_hp = 100
         self.hp = self.max_hp
         self.onCooldown = False
         self.isStaggered = False
+        enemies += 1
     def hp(self):
         return self.hp
 
     def hp(self, value):
         self.hp = value
         if value <= 0:
+
             destroy(self)
             return
     
     def update(self):
+        global wave, maxEnemies, enemiesToSpawn, enemies
         dist = distance(player.position, self.position)
         if dist > 1000:
             return
@@ -230,7 +269,7 @@ class BasicEnemy(Entity):
             hit_info = raycast(self.world_position + Vec3(0,0,0), self.forward, ignore=(self, environmentStatic, ground))
             if player in hit_info.entities:
                 if dist > 2:
-                    self.position += self.forward * time.dt * 5
+                    self.position += self.forward * time.dt * 10
                 elif dist <= 2:
                     if not self.onCooldown:
                         self.onCooldown = True
@@ -238,16 +277,10 @@ class BasicEnemy(Entity):
                         invoke(setattr, self, 'onCooldown', False, delay = 1)
         else:
             self.blink(color.blue, duration = 0.3)
-            
-                        
-                
+#enemy code
 
+BasicEnemy()
 
-#creates our enemies
-enemies = []
-maxEnemies = 30
-enemiesToSpawn = 10
-wave = 0
 
     
     
