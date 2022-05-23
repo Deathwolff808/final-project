@@ -70,7 +70,7 @@ Entity(parent = environmentStatic, position=Vec3(-132.829, 9.70515, 109.46), rot
 environmentStatic.combine()
 environmentStatic.collider = 'mesh'
 
-destructible = Entity(position=Vec3(-1.95785, 0.868581, 11.956), scale=Vec3(5.39646, 1.76104, 2.99344), model='cube', collider='box', )
+#destructible = Entity(position=Vec3(-1.95785, 0.868581, 11.956), scale=Vec3(5.39646, 1.76104, 2.99344), model='cube', collider='box', )
 #scene light source diabled for now may be readded later but for now i want to keep things kinda dark
 sun = AmbientLight(position = (100, 100, 100))
 sun.look_at(Vec3(1,0,1))
