@@ -24,7 +24,6 @@ state_handler = Animator({
 def start_game():
     menu_parent.enabled = False
     import finalprojectemanuelver
-    destroy.app
     finalprojectemanuelver.play_game()
 
 # main menu content
