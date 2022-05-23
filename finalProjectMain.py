@@ -1,12 +1,10 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import lit_with_shadows_shader
-from ursina.editor import *
-from ursina.editor import level_editor
 from random import randrange
-
+import particleSystem
 #opens window part 1
-app = Ursina()
+app = Ursina(vsync = False)
 
 #environment stuff gets done here
 
@@ -74,11 +72,17 @@ environmentStatic.collider = 'mesh'
 
 destructible = Entity(position=Vec3(-1.95785, 0.868581, 11.956), scale=Vec3(5.39646, 1.76104, 2.99344), model='cube', collider='box', )
 #scene light source diabled for now may be readded later but for now i want to keep things kinda dark
-
-sun = DirectionalLight(shadows = True, position = (100, 100, 100))
+sun = AmbientLight(position = (100, 100, 100))
 sun.look_at(Vec3(1,0,1))
 #skybox
 Sky()
+
+#enemy variables
+enemies = 0
+maxEnemies = 30
+enemiesToSpawn = 10
+enemiesToSpawn2 = 10
+wave = 0
 
 #player code below
 '''
@@ -100,8 +104,6 @@ player = Player(gun = autocannon, weaponList = [autocannon])
 '''
 
 
-
-
 #create player entity
 player = FirstPersonController(height = 2, speed = 15)
 #provides collider for player
@@ -117,8 +119,6 @@ autocannon = Entity(model='cube',
                  color=color.red,
                  on_cooldown=False,
                  name = 'autocannon',
-                 ammo = 15,
-                 maxAmmo = 15
                  )
 player.gun = autocannon
 player.gun.muzzle_flash = Entity(parent=player.gun,
@@ -128,11 +128,14 @@ player.gun.muzzle_flash = Entity(parent=player.gun,
                                   color=color.yellow,
                                   enabled=False
                                   )
+#player ammo dictionary. first number is the current ammo second is max ammo
+player.ammoCounts = {
+    'autocannon': [60, 60]}
 #list of the players weapons so when more are added we can do some stuff more easily
 player.weaponList = [autocannon]
 #player UI code
 ammoCount = Text(scale_override = 2,
-            text = str(player.gun.ammo)
+            text = str(player.ammoCounts[player.gun.name][0])
             )
 ammoCount.position = (0.8,-0.45)
 health = Text(text = str(player.health))
@@ -142,24 +145,42 @@ def input(key):
     if key == 'escape':
         quit()
     if key == 'r':
-        Func(reload(), delay = 0.5)
+        reload()
+    if key == 'q':
+       heal() 
     if key == 'l':
         BasicEnemy()
+        print(enemies)
 
 def shoot():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if player.gun == player.weaponList[0]:
-        if not player.gun.on_cooldown and player.gun.ammo > 0:
+        if not player.gun.on_cooldown and player.ammoCounts[player.gun.name][0] > 0:
             player.gun.on_cooldown = True
             player.gun.muzzle_flash.enabled=True
-            player.gun.ammo -= 1
-            ammoCount.text = str(player.gun.ammo)
+            player.ammoCounts[player.gun.name][0] -= 1
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
             invoke(player.gun.muzzle_flash.disable, delay=.05)
             invoke(setattr, player.gun, 'on_cooldown', False, delay=.2)
             if hasattr(mouse.hovered_entity, 'hp'): #code that ive removed for now: mouse.hovered_entity and 
                 mouse.hovered_entity.hp -= 10
                 mouse.hovered_entity.blink(color.red)
-                if mouse.hovered_entity.hp == 0:
+                if mouse.hovered_entity.hp <= 0:
+                    enemies -= 1
+                    if (enemies + enemiesToSpawn) == 0:
+                        wave += 1
+                        enemiesToSpawn = 10 + (wave * 5)
+                        enemiesToSpawn2 = 10 + (wave * 5)
+                    if enemiesToSpawn > 0:
+                        while enemies <= maxEnemies and enemiesToSpawn > 0:
+                            BasicEnemy()
+                            enemiesToSpawn -= 1 
+                    #print("it died")
+                    #print(enemies)
                     destroy(mouse.hovered_entity)
+                elif mouse.hovered_entity.hp <= 30:
+                    mouse.hovered_entity.isStaggered = True
+                
             '''
             totally not stolen code for a bullet animation that im unsure about implementing
             
@@ -170,19 +191,48 @@ def shoot():
             '''
 
 def update():
+    global enemies
     if held_keys['left mouse']:
         shoot()
-        
+
 def reload():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if mouse.world_point != None:
         reloadRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
-        print(reloadRaycast.entity)
+        #print(reloadRaycast.entity)
         if reloadRaycast.entity != None and hasattr(reloadRaycast.entity, 'isStaggered'):
             if reloadRaycast.entity.isStaggered:
                 player.ammoCounts[player.gun.name][0] = player.ammoCounts[player.gun.name][1]
                 ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+                enemies -= 1
+                if (enemies + enemiesToSpawn) == 0:
+                    wave += 1
+                    enemiesToSpawn = 10 + (wave * 5)
+                    enemiesToSpawn2 = 10 + (wave * 5)
+                if enemiesToSpawn > 0:
+                    while enemies <= maxEnemies and enemiesToSpawn > 0:
+                        BasicEnemy()
+                        enemiesToSpawn -= 1
                 destroy(reloadRaycast.entity)
-
+def heal():
+    global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
+    if mouse.world_point != None:
+        healRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
+        #print(healRaycast.entity)
+        if healRaycast.entity != None and hasattr(healRaycast.entity, 'isStaggered'):
+            if healRaycast.entity.isStaggered:
+                player.health += 25
+                health.text = str(player.health)
+                enemies -= 1
+                if (enemies + enemiesToSpawn) == 0:
+                    wave += 1
+                    enemiesToSpawn = 10 + (wave * 5)
+                    enemiesToSpawn2 = 10 + (wave * 5)
+                if enemiesToSpawn > 0:
+                    while enemies <= maxEnemies and enemiesToSpawn > 0:
+                        BasicEnemy()
+                        enemiesToSpawn -= 1
+                destroy(healRaycast.entity)
 def damagePlayer():
     player.health -= 5
     health.text = str(player.health)
@@ -191,22 +241,26 @@ def damagePlayer():
 
 class BasicEnemy(Entity):
     def __init__(self, **kwargs):
-        super().__init__( model='cube', scale_y=2, origin_y=-0.5, color=color.green,x = 15, z = 15, collider = 'box')
+        global enemies
+        super().__init__( model='cube', scale_y=2, origin_y=-0.5, color=color.green,x = randrange(-125, 125), z = randrange(-125, 125), collider = 'box')
         #self.health_bar = Entity(y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
         self.max_hp = 100
         self.hp = self.max_hp
         self.onCooldown = False
         self.isStaggered = False
+        enemies += 1
     def hp(self):
         return self.hp
 
     def hp(self, value):
         self.hp = value
         if value <= 0:
+
             destroy(self)
             return
     
     def update(self):
+        global wave, maxEnemies, enemiesToSpawn, enemies
         dist = distance(player.position, self.position)
         if dist > 1000:
             return
@@ -215,18 +269,21 @@ class BasicEnemy(Entity):
             hit_info = raycast(self.world_position + Vec3(0,0,0), self.forward, ignore=(self, environmentStatic, ground))
             if player in hit_info.entities:
                 if dist > 2:
-                    self.position += self.forward * time.dt * 5
+                    self.position += self.forward * time.dt * 10
                 elif dist <= 2:
                     if not self.onCooldown:
                         self.onCooldown = True
                         damagePlayer()
                         invoke(setattr, self, 'onCooldown', False, delay = 1)
         else:
-            if hasattr(mouse.hovered_entity, 'isStaggered'):
-                self.blink(color.blue, duration = 0.3)
+            self.blink(color.blue, duration = 0.3)
+#enemy code
 
-#creates our enemies
+BasicEnemy()
 
-   
+
+    
+    
+    
 
 app.run()
