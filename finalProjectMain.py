@@ -111,7 +111,7 @@ player = FirstPersonController(height = 2, speed = 15)
 #provides collider for player
 player.collider = BoxCollider(player)
 #sets player health
-player.health = 100
+player.health = int(100)
 #makes the weapons for the player
 autocannon = Entity(model='cube',
                  parent=camera,
@@ -317,6 +317,9 @@ def heal():
 def damagePlayer():
     player.health -= 5
     health.text = str(player.health)
+    if player.health <= 0:
+        quit()
+
 
 #enemy code below
 
@@ -360,6 +363,8 @@ class BasicEnemy(Entity):
             self.blink(color.blue, duration = 0.3)
 #enemy code
 
+
+
 class inputController(Entity):
     def __init__(self, **kwargs):
         super().__init__()
@@ -393,6 +398,12 @@ class inputController(Entity):
             player.gun = minigun
             player.gun.visible = True
             ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+
+
+    def death():
+        if player.helth <= 0:
+            quit()
+
             
 BasicEnemy()
 inputController()
