@@ -2,7 +2,7 @@ from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import *
 from random import randrange
-import particleSystem
+from particleSystem import ParticleSystem
 #opens window part 1
 if __name__ == "__main__":
     app = Ursina(vsync = False)
@@ -197,6 +197,7 @@ def shoot():
                 mouse.hovered_entity.hp -= 50
                 mouse.hovered_entity.blink(color.red)
                 if mouse.hovered_entity.hp <= 0:
+                    ParticleSystem(position = mouse.world_point, color = color.green)
                     enemies -= 1
                     if (enemies + enemiesToSpawn) == 0:
                         wave += 1
@@ -223,6 +224,7 @@ def shoot():
                 mouse.hovered_entity.hp -= 20
                 mouse.hovered_entity.blink(color.red)
                 if mouse.hovered_entity.hp <= 0:
+                    ParticleSystem(position = mouse.world_point, color = color.green)
                     enemies -= 1
                     if (enemies + enemiesToSpawn) == 0:
                         wave += 1
@@ -249,6 +251,7 @@ def shoot():
                 mouse.hovered_entity.hp -= 8
                 mouse.hovered_entity.blink(color.red)
                 if mouse.hovered_entity.hp <= 0:
+                    ParticleSystem(position = mouse.world_point, color = color.green)
                     enemies -= 1
                     if (enemies + enemiesToSpawn) == 0:
                         wave += 1
