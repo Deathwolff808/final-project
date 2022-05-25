@@ -1,11 +1,11 @@
 from ursina import *
-from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.shaders import *
 from random import randrange
 import particleSystem
 #opens window part 1
-app = Ursina(vsync = False)
+if __name__ == "__main__":
+    app = Ursina(vsync = False)
 
 #environment stuff gets done here
 
@@ -180,28 +180,7 @@ ammoCount.position = (0.75,-0.45)
 health = Text(text = str(player.health))
 health.position = (-0.8,-0.45)
 health.scale_override = 2
-def input(key):
-    if key == 'escape':
-        quit()
-    if key == 'r':
-        reload()
-    if key == 'q':
-       heal() 
-    if key == '1':
-        player.gun.visible = False
-        player.gun = autocannon
-        player.gun.visible = True
-        ammoCount.text = str(player.ammoCounts[player.gun.name][0])
-    if key == '2':
-        player.gun.visible = False
-        player.gun = rifle
-        player.gun.visible = True
-        ammoCount.text = str(player.ammoCounts[player.gun.name][0])
-    if key == '3':
-        player.gun.visible = False
-        player.gun = minigun
-        player.gun.visible = True
-        ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+
 
 
 def shoot():
@@ -294,10 +273,8 @@ def shoot():
             destroy(bullet, delay=1)
             '''
 
-def update():
-    global enemies
-    if held_keys['left mouse']:
-        shoot()
+
+    
 
 def reload():
     global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
@@ -383,11 +360,45 @@ class BasicEnemy(Entity):
             self.blink(color.blue, duration = 0.3)
 #enemy code
 
+class inputController(Entity):
+    def __init__(self, **kwargs):
+        super().__init__()
+        #self.health_bar = Entity(y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
+       
+    
+    def update(self):
+
+        if held_keys['left mouse']:
+            shoot()
+
+    def input(self,key):
+        if key == 'escape':
+            quit()
+        if key == 'r':
+            reload()
+        if key == 'q':
+           heal() 
+        if key == '1':
+            player.gun.visible = False
+            player.gun = autocannon
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+        if key == '2':
+            player.gun.visible = False
+            player.gun = rifle
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+        if key == '3':
+            player.gun.visible = False
+            player.gun = minigun
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+            
 BasicEnemy()
-
+inputController()
 
     
     
     
-
-app.run()
+if __name__ == "__main__":
+    app.run()
