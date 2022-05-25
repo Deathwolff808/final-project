@@ -23,8 +23,8 @@ state_handler = Animator({
 
 def start_game():
     menu_parent.enabled = False
-    import finalprojectemanuelver
-    finalprojectemanuelver.play_game()
+    import finalProjectNoahVer
+    
 
 # main menu content
 main_menu.buttons = [
