@@ -1,10 +1,11 @@
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
-from ursina.shaders import lit_with_shadows_shader
+from ursina.shaders import *
 from random import randrange
 import particleSystem
 #opens window part 1
-app = Ursina(vsync = False)
+if __name__ == "__main__":
+    app = Ursina(vsync = False)
 
 #environment stuff gets done here
 
@@ -14,9 +15,10 @@ environmentStatic = Entity()
 ground = Entity(model = 'plane',
                 scale = (260, 1 ,260),
                 texture = 'grass',
-                texture_scale=(64,64),
+                texture_scale=(32,32),
                 y = 0,
-                collider = 'mesh', 
+                collider = 'mesh',
+                color = color.brown
                 )
 Entity(parent = environmentStatic, position=Vec3(-117.169, 16.2564, 131.794), scale=Vec3(15.3984, 32.6865, 15.3984), model='cube', color=Color(0.44999998807907104, 0.44999998807907104, 0.44999998807907104, 1.0),),
 Entity(parent = environmentStatic, position=Vec3(-96.6202, 9.70114, 131.794), scale=Vec3(25.8135, 19.5572, 15.3984), model='cube', color=Color(0.33000001311302185, 0.33000001311302185, 0.33000001311302185, 1.0),),
@@ -110,7 +112,7 @@ player = FirstPersonController(height = 2, speed = 15)
 player.collider = BoxCollider(player)
 #sets player health
 player.health = 100
-#makes the autocannon weapon for the player
+#makes the weapons for the player
 autocannon = Entity(model='cube',
                  parent=camera,
                  position=(.5,-.25,.25),
@@ -120,6 +122,26 @@ autocannon = Entity(model='cube',
                  on_cooldown=False,
                  name = 'autocannon',
                  )
+rifle = Entity(model='cube',
+                 parent=camera,
+                 position=(.5,-.25,.25),
+                 scale=(.3,.2,1),
+                 origin_z=-.5,
+                 color=color.gold,
+                 on_cooldown=False,
+                 name = 'rifle',
+                 visible = False
+                 )
+minigun = Entity(model='cube',
+                 parent=camera,
+                 position=(.5,-.25,.25),
+                 scale=(.3,.2,1),
+                 origin_z=-.5,
+                 color=color.olive,
+                 on_cooldown=False,
+                 name = 'minigun',
+                 visible = False
+                 )
 player.gun = autocannon
 player.gun.muzzle_flash = Entity(parent=player.gun,
                                   z=1,
@@ -128,29 +150,38 @@ player.gun.muzzle_flash = Entity(parent=player.gun,
                                   color=color.yellow,
                                   enabled=False
                                   )
+rifle.muzzle_flash = Entity(parent=rifle,
+                                  z=1,
+                                  world_scale=.5,
+                                  model='quad',
+                                  color=color.yellow,
+                                  enabled=False
+                                  )
+minigun.muzzle_flash = Entity(parent=minigun,
+                                  z=1,
+                                  world_scale=.5,
+                                  model='quad',
+                                  color=color.yellow,
+                                  enabled=False
+                                  )
 #player ammo dictionary. first number is the current ammo second is max ammo
 player.ammoCounts = {
-    'autocannon': [60, 60]}
+    'autocannon': [60, 60],
+    'rifle': [200, 200],
+    'minigun': [1000, 1000]
+    }
 #list of the players weapons so when more are added we can do some stuff more easily
-player.weaponList = [autocannon]
+player.weaponList = [autocannon, rifle, minigun]
 #player UI code
 ammoCount = Text(scale_override = 2,
             text = str(player.ammoCounts[player.gun.name][0])
             )
-ammoCount.position = (0.8,-0.45)
+ammoCount.position = (0.75,-0.45)
 health = Text(text = str(player.health))
 health.position = (-0.8,-0.45)
 health.scale_override = 2
-def input(key):
-    if key == 'escape':
-        quit()
-    if key == 'r':
-        reload()
-    if key == 'q':
-       heal() 
-    if key == 'l':
-        BasicEnemy()
-        print(enemies)
+
+
 
 def shoot():
     global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
@@ -161,9 +192,61 @@ def shoot():
             player.ammoCounts[player.gun.name][0] -= 1
             ammoCount.text = str(player.ammoCounts[player.gun.name][0])
             invoke(player.gun.muzzle_flash.disable, delay=.05)
-            invoke(setattr, player.gun, 'on_cooldown', False, delay=.2)
+            invoke(setattr, player.gun, 'on_cooldown', False, delay=.35)
             if hasattr(mouse.hovered_entity, 'hp'): #code that ive removed for now: mouse.hovered_entity and 
-                mouse.hovered_entity.hp -= 10
+                mouse.hovered_entity.hp -= 50
+                mouse.hovered_entity.blink(color.red)
+                if mouse.hovered_entity.hp <= 0:
+                    enemies -= 1
+                    if (enemies + enemiesToSpawn) == 0:
+                        wave += 1
+                        enemiesToSpawn = 10 + (wave * 5)
+                        enemiesToSpawn2 = 10 + (wave * 5)
+                    if enemiesToSpawn > 0:
+                        while enemies <= maxEnemies and enemiesToSpawn > 0:
+                            BasicEnemy()
+                            enemiesToSpawn -= 1 
+                    #print("it died")
+                    #print(enemies)
+                    destroy(mouse.hovered_entity)
+                elif mouse.hovered_entity.hp <= 30:
+                    mouse.hovered_entity.isStaggered = True
+    elif player.gun == player.weaponList[1]:
+        if not player.gun.on_cooldown and player.ammoCounts[player.gun.name][0] > 0:
+            player.gun.on_cooldown = True
+            rifle.muzzle_flash.enabled=True
+            player.ammoCounts[player.gun.name][0] -= 1
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+            invoke(player.gun.muzzle_flash.disable, delay=.05)
+            invoke(setattr, player.gun, 'on_cooldown', False, delay=.1)
+            if hasattr(mouse.hovered_entity, 'hp'): #code that ive removed for now: mouse.hovered_entity and 
+                mouse.hovered_entity.hp -= 20
+                mouse.hovered_entity.blink(color.red)
+                if mouse.hovered_entity.hp <= 0:
+                    enemies -= 1
+                    if (enemies + enemiesToSpawn) == 0:
+                        wave += 1
+                        enemiesToSpawn = 10 + (wave * 5)
+                        enemiesToSpawn2 = 10 + (wave * 5)
+                    if enemiesToSpawn > 0:
+                        while enemies <= maxEnemies and enemiesToSpawn > 0:
+                            BasicEnemy()
+                            enemiesToSpawn -= 1 
+                    #print("it died")
+                    #print(enemies)
+                    destroy(mouse.hovered_entity)
+                elif mouse.hovered_entity.hp <= 30:
+                    mouse.hovered_entity.isStaggered = True
+    elif player.gun == player.weaponList[2]:
+        if not player.gun.on_cooldown and player.ammoCounts[player.gun.name][0] > 0:
+            player.gun.on_cooldown = True
+            minigun.muzzle_flash.enabled=True
+            player.ammoCounts[player.gun.name][0] -= 1
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+            invoke(player.gun.muzzle_flash.disable, delay=.05)
+            invoke(setattr, player.gun, 'on_cooldown', False, delay=.0075)
+            if hasattr(mouse.hovered_entity, 'hp'): #code that ive removed for now: mouse.hovered_entity and 
+                mouse.hovered_entity.hp -= 8
                 mouse.hovered_entity.blink(color.red)
                 if mouse.hovered_entity.hp <= 0:
                     enemies -= 1
@@ -190,15 +273,13 @@ def shoot():
             destroy(bullet, delay=1)
             '''
 
-def update():
-    global enemies
-    if held_keys['left mouse']:
-        shoot()
+
+    
 
 def reload():
     global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if mouse.world_point != None:
-        reloadRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
+        reloadRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic])
         #print(reloadRaycast.entity)
         if reloadRaycast.entity != None and hasattr(reloadRaycast.entity, 'isStaggered'):
             if reloadRaycast.entity.isStaggered:
@@ -217,7 +298,7 @@ def reload():
 def heal():
     global wave, maxEnemies, enemiesToSpawn, enemies, enemiesToSpawn2
     if mouse.world_point != None:
-        healRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic, destructible])
+        healRaycast = raycast(player.world_position, player.direction, distance = 4, ignore=[player, autocannon, ground, environmentStatic])
         #print(healRaycast.entity)
         if healRaycast.entity != None and hasattr(healRaycast.entity, 'isStaggered'):
             if healRaycast.entity.isStaggered:
@@ -279,11 +360,45 @@ class BasicEnemy(Entity):
             self.blink(color.blue, duration = 0.3)
 #enemy code
 
+class inputController(Entity):
+    def __init__(self, **kwargs):
+        super().__init__()
+        #self.health_bar = Entity(y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
+       
+    
+    def update(self):
+
+        if held_keys['left mouse']:
+            shoot()
+
+    def input(self,key):
+        if key == 'escape':
+            quit()
+        if key == 'r':
+            reload()
+        if key == 'q':
+           heal() 
+        if key == '1':
+            player.gun.visible = False
+            player.gun = autocannon
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+        if key == '2':
+            player.gun.visible = False
+            player.gun = rifle
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+        if key == '3':
+            player.gun.visible = False
+            player.gun = minigun
+            player.gun.visible = True
+            ammoCount.text = str(player.ammoCounts[player.gun.name][0])
+            
 BasicEnemy()
-
+inputController()
 
     
     
     
-
-app.run()
+if __name__ == "__main__":
+    app.run()
