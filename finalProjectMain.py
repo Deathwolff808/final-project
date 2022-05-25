@@ -329,7 +329,7 @@ def damagePlayer():
 class BasicEnemy(Entity):
     def __init__(self, **kwargs):
         global enemies
-        super().__init__( model='cube', scale_y=2, origin_y=-0.5, color=color.green,x = randrange(-125, 125), z = randrange(-125, 125), collider = 'box')
+         super().__init__( model='cube', texture='Zombie', scale_y=3, origin_y=-0.5, color=color.green,x = randrange(-125, 125), z = randrange(-125, 125), collider = 'box')
         #self.health_bar = Entity(y=1.2, model='cube', color=color.red, world_scale=(1.5,.1,.1))
         self.max_hp = 100
         self.hp = self.max_hp
